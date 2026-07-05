@@ -8,8 +8,10 @@ const SKILL_KEYWORDS = [
 
 const normalizeText = (text) => text.replace(/\r/g, '\n').replace(/\n{2,}/g, '\n').trim();
 
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 const extractSection = (text, heading) => {
-  const regex = new RegExp(`${heading}[:\s]*`, 'i');
+  const regex = new RegExp(`${escapeRegex(heading)}[:\s]*`, 'i');
   const match = regex.exec(text);
   if (!match) return '';
 
@@ -32,7 +34,7 @@ export const parseResumeText = (rawText) => {
 
   const lowerText = text.toLowerCase();
   const skills = SKILL_KEYWORDS.filter((skill) => {
-    const safeSkill = skill.replace('.', '\\.');
+    const safeSkill = escapeRegex(skill);
     return new RegExp(`\\b${safeSkill}\\b`, 'i').test(lowerText);
   });
 

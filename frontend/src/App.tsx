@@ -3,11 +3,12 @@ import LoginPage from './pages/Login';
 import RegisterPage from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import ResumeUploadPage from './pages/ResumeUpload';
+import InterviewPage from './pages/Interview';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const App = () => {
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
+    <div className="min-h-screen bg-slate-950 text-slate-100">
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -24,6 +25,14 @@ const App = () => {
           element={
             <ProtectedRoute>
               <ResumeUploadPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/interview"
+          element={
+            <ProtectedRoute>
+              <InterviewPage />
             </ProtectedRoute>
           }
         />
