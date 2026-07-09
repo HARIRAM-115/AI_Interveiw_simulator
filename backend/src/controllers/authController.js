@@ -85,3 +85,99 @@ export const getProfile = async (req, res, next) => {
     next(error);
   }
 };
+
+export const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      res.status(400);
+      throw new Error('Email is required');
+    }
+    const user = await User.findOne({ email });
+    if (!user) {
+      res.status(404);
+      throw new Error('No account found with that email address');
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.resetPasswordOtp = otp;
+    user.resetPasswordExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    await user.save({ validateBeforeSave: false });
+
+    console.log(`\n========================================`);
+    console.log(`  🔑 PASSWORD RESET OTP FOR: ${email}`);
+    console.log(`  CODE: ${otp}`);
+    console.log(`  Expires in 10 minutes`);
+    console.log(`========================================\n`);
+
+    res.json({ success: true, message: 'Verification code sent to your email address.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const verifyOtp = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      res.status(400);
+      throw new Error('Email and OTP are required');
+    }
+
+    const user = await User.findOne({ email });
+    if (!user || !user.resetPasswordOtp) {
+      res.status(400);
+      throw new Error('No password reset request found. Please request a new OTP.');
+    }
+    if (new Date() > user.resetPasswordExpires) {
+      res.status(400);
+      throw new Error('OTP has expired. Please request a new code.');
+    }
+    if (user.resetPasswordOtp !== otp) {
+      res.status(400);
+      throw new Error('Invalid verification code. Please try again.');
+    }
+
+    res.json({ success: true, message: 'OTP verified successfully.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resetPassword = async (req, res, next) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) {
+      res.status(400);
+      throw new Error('Email, OTP, and new password are required');
+    }
+    if (newPassword.length < 6) {
+      res.status(400);
+      throw new Error('Password must be at least 6 characters');
+    }
+
+    const user = await User.findOne({ email });
+    if (!user || !user.resetPasswordOtp) {
+      res.status(400);
+      throw new Error('No password reset request found.');
+    }
+    if (new Date() > user.resetPasswordExpires) {
+      res.status(400);
+      throw new Error('OTP has expired. Please request a new code.');
+    }
+    if (user.resetPasswordOtp !== otp) {
+      res.status(400);
+      throw new Error('Invalid verification code.');
+    }
+
+    user.password = newPassword;
+    user.resetPasswordOtp = null;
+    user.resetPasswordExpires = null;
+    await user.save();
+
+    res.json({ success: true, message: 'Password reset successfully. Please log in.' });
+  } catch (error) {
+    next(error);
+  }
+};
+

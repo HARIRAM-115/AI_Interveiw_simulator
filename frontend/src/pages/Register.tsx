@@ -22,7 +22,15 @@ const RegisterPage = () => {
       localStorage.setItem('token', token);
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Registration failed. Please try again.');
+      let msg = 'Registration failed. Please try again.';
+      if (err.response?.data?.message) {
+        msg = err.response.data.message;
+      } else if (err.message === 'Network Error') {
+        msg = 'Server is unreachable. Please make sure the backend is running on port 5050.';
+      } else if (err.message) {
+        msg = err.message;
+      }
+      setError(msg);
     } finally {
       setLoading(false);
     }

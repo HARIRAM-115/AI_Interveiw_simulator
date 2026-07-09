@@ -42,6 +42,8 @@ export const startInterview = (payload: {
   skills: string[];
   resumeText: string;
   difficulty: string;
+  type: string;
+  company?: string;
   count: number;
 }) => api.post('/interviews/start', payload);
 
@@ -56,5 +58,21 @@ export const getInterviews = () => api.get('/interviews');
 
 export const getInterviewDetails = (id: string) => api.get(`/interviews/${id}`);
 
-export default api;
+export const getLeaderboard = () => api.get('/interviews/leaderboard');
 
+export const getCareerMatch = (payload: { skills: string[]; interviews: any[] }) =>
+  api.post('/ai/career-match', payload);
+
+export const getSkillTutorial = (payload: { skillName: string }) =>
+  api.post('/ai/skill-tutor', payload);
+
+export const forgotPassword = (payload: { email: string }) =>
+  api.post('/auth/forgot-password', payload);
+
+export const verifyOtp = (payload: { email: string; otp: string }) =>
+  api.post('/auth/verify-otp', payload);
+
+export const resetPassword = (payload: { email: string; otp: string; newPassword: string }) =>
+  api.post('/auth/reset-password', payload);
+
+export default api;

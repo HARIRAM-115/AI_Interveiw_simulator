@@ -46,10 +46,46 @@ export const parseResumeText = (rawText) => {
   const experience = experienceSection ? extractLines(experienceSection) : [];
   const skillsFromSection = skillsSection ? extractLines(skillsSection) : [];
 
+  const finalSkills = Array.from(new Set([...skills, ...skillsFromSection])).slice(0, 40);
+
+  // ATS Scoring Logic
+  let atsScore = 35;
+  if (finalSkills.length > 0) {
+    atsScore += Math.min(30, finalSkills.length * 3.5);
+  }
+  if (education.length > 0) {
+    atsScore += 15;
+  }
+  if (experience.length > 0) {
+    atsScore += 15;
+  }
+  if (text.length > 1000) {
+    atsScore += 5;
+  }
+  atsScore = Math.min(100, Math.round(atsScore));
+
+  // Missing modern keywords detector
+  const commonImportant = ['docker', 'kubernetes', 'aws', 'typescript', 'next.js', 'testing', 'system design', 'microservices'];
+  const missingKeywords = commonImportant.filter(k => !finalSkills.map(s => s.toLowerCase()).includes(k));
+
+  // Weak/Generic keywords suggestions
+  const weakDetector = ['html', 'css', 'api', 'git', 'sql'];
+  const weakKeywords = finalSkills
+    .filter(s => weakDetector.includes(s.toLowerCase()))
+    .map(s => {
+      if (s.toLowerCase() === 'html' || s.toLowerCase() === 'css') return `${s} (Consider replacing with React/Tailwind)`;
+      if (s.toLowerCase() === 'api') return `${s} (Specify RESTful API design / GraphQL)`;
+      if (s.toLowerCase() === 'sql') return `${s} (Specify PostgreSQL / Database Normalization)`;
+      return `${s} (Consider highlighting advanced methodologies)`;
+    });
+
   return {
     extractedText: text,
-    skills: Array.from(new Set([...skills, ...skillsFromSection])).slice(0, 40),
+    skills: finalSkills,
     education,
     experience,
+    atsScore,
+    missingKeywords,
+    weakKeywords,
   };
 };

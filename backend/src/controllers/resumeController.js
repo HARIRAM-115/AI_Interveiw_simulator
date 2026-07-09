@@ -11,14 +11,18 @@ export const uploadResume = async (req, res, next) => {
 
     const { originalname, buffer } = req.file;
     const parsed = await pdfParse(buffer);
-    const { extractedText, skills, education, experience } = parseResumeText(parsed.text);
+    const { extractedText, skills, education, experience, atsScore, missingKeywords, weakKeywords } = parseResumeText(parsed.text);
 
     const resume = await Resume.create({
+      userId: req.user._id,
       originalFileName: originalname,
       extractedText,
       skills,
       education,
       experience,
+      atsScore,
+      missingKeywords,
+      weakKeywords,
     });
 
     res.status(201).json({ success: true, data: resume });
@@ -29,7 +33,7 @@ export const uploadResume = async (req, res, next) => {
 
 export const getResumes = async (req, res, next) => {
   try {
-    const resumes = await Resume.find().sort({ createdAt: -1 }).lean();
+    const resumes = await Resume.find({ userId: req.user._id }).sort({ createdAt: -1 }).lean();
     res.json({ success: true, data: resumes });
   } catch (error) {
     next(error);

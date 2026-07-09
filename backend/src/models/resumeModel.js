@@ -2,6 +2,11 @@ import mongoose from 'mongoose';
 
 const resumeSchema = new mongoose.Schema(
   {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
     originalFileName: {
       type: String,
       required: true,
@@ -19,6 +24,18 @@ const resumeSchema = new mongoose.Schema(
       default: [],
     },
     experience: {
+      type: [String],
+      default: [],
+    },
+    atsScore: {
+      type: Number,
+      default: 0,
+    },
+    missingKeywords: {
+      type: [String],
+      default: [],
+    },
+    weakKeywords: {
       type: [String],
       default: [],
     },

@@ -1,9 +1,9 @@
 import Interview from '../models/interviewModel.js';
-import { generateInterviewQuestions, evaluateAnswer, evaluateOverallInterview } from '../utils/aiUtils.js';
+import { generateInterviewQuestions, evaluateAnswer, evaluateOverallInterview, generatePersonalizedRoadmap } from '../utils/aiUtils.js';
 
 export const startInterview = async (req, res, next) => {
   try {
-    const { role, skills, resumeText, difficulty, count } = req.body;
+    const { role, skills, resumeText, difficulty, type, company, count } = req.body;
 
     const limit = count ? Number(count) : 5;
     const questions = await generateInterviewQuestions({
@@ -11,6 +11,8 @@ export const startInterview = async (req, res, next) => {
       skills,
       resumeText,
       difficulty,
+      type,
+      company: company || 'None',
       count: limit,
     });
 
@@ -18,6 +20,8 @@ export const startInterview = async (req, res, next) => {
       userId: req.user._id,
       role,
       difficulty,
+      type: type || 'Mixed',
+      company: company || 'None',
       skills: skills || [],
       questions,
       answers: new Array(questions.length).fill(''),
@@ -68,6 +72,13 @@ export const submitAnswer = async (req, res, next) => {
       feedback: evaluation.feedback,
       strengths: evaluation.strengths || [],
       weaknesses: evaluation.weaknesses || [],
+      detailedExplanation: evaluation.detailedExplanation || '',
+      modelAnswer: evaluation.modelAnswer || '',
+      fillerWords: evaluation.fillerWords || [],
+      fillerCount: evaluation.fillerCount || 0,
+      communicationScore: evaluation.communicationScore || 100,
+      codeComplexity: evaluation.codeComplexity || 'N/A',
+      codeQualityScore: evaluation.codeQualityScore || 0,
     });
 
     // Mark modifications so Mongoose knows the nested array / items changed
@@ -94,14 +105,25 @@ export const finishInterview = async (req, res, next) => {
 
     // Sort evaluations to align with questions
     const sortedEvaluations = [];
+    const collectedWeaknesses = [];
     for (let i = 0; i < interview.questions.length; i++) {
       const evalItem = interview.evaluations.find((e) => e.questionIndex === i) || {
         score: 0,
         feedback: 'No answer provided.',
         strengths: [],
         weaknesses: ['Did not answer'],
+        detailedExplanation: 'Candidate did not provide a response.',
+        modelAnswer: 'A model answer is not generated for skipped questions.',
+        fillerWords: [],
+        fillerCount: 0,
+        communicationScore: 100,
+        codeComplexity: 'N/A',
+        codeQualityScore: 0,
       };
       sortedEvaluations[i] = evalItem;
+      if (Array.isArray(evalItem.weaknesses)) {
+        collectedWeaknesses.push(...evalItem.weaknesses);
+      }
     }
 
     const overall = await evaluateOverallInterview({
@@ -112,8 +134,15 @@ export const finishInterview = async (req, res, next) => {
       evaluations: sortedEvaluations,
     });
 
+    const uniqueWeaknesses = [...new Set(collectedWeaknesses)].filter(w => w !== 'Did not answer');
+    const roadmap = await generatePersonalizedRoadmap({
+      role: interview.role,
+      weakAreas: uniqueWeaknesses,
+    });
+
     interview.overallScore = overall.overallScore;
     interview.overallFeedback = overall.overallFeedback;
+    interview.roadmap = roadmap;
     interview.completed = true;
 
     await interview.save();
@@ -144,6 +173,49 @@ export const getInterviewDetails = async (req, res, next) => {
       throw new Error('Interview not found');
     }
     res.json({ success: true, data: interview });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getLeaderboard = async (req, res, next) => {
+  try {
+    const leaderboard = await Interview.aggregate([
+      { $match: { completed: true } },
+      {
+        $group: {
+          _id: '$userId',
+          averageScore: { $avg: '$overallScore' },
+          totalInterviews: { $sum: 1 },
+          bestScore: { $max: '$overallScore' },
+          latestRole: { $first: '$role' }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      { $unwind: '$user' },
+      {
+        $project: {
+          _id: 1,
+          averageScore: { $round: ['$averageScore', 1] },
+          totalInterviews: 1,
+          bestScore: 1,
+          latestRole: 1,
+          name: '$user.name',
+          role: '$user.role',
+          email: '$user.email'
+        }
+      },
+      { $sort: { averageScore: -1, totalInterviews: -1 } },
+      { $limit: 15 }
+    ]);
+    res.json({ success: true, data: leaderboard });
   } catch (error) {
     next(error);
   }

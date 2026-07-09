@@ -173,6 +173,64 @@ const ResumeUploadPage = () => {
               </div>
             </div>
 
+            {/* AI ATS Optimization Card */}
+            <div className="rounded-3xl border border-slate-800 bg-[#0c0822]/60 p-6 backdrop-blur-xl flex flex-col md:flex-row items-center gap-8">
+              {/* circular progress gauge */}
+              <div className="relative flex items-center justify-center h-28 w-28 shrink-0">
+                <svg className="h-full w-full transform -rotate-90">
+                  <circle cx="56" cy="56" r="48" stroke="rgba(255,255,255,0.05)" strokeWidth="8" fill="transparent" />
+                  <circle cx="56" cy="56" r="48" stroke="url(#ats-glow)" strokeWidth="8" fill="transparent"
+                          strokeDasharray={2 * Math.PI * 48}
+                          strokeDashoffset={2 * Math.PI * 48 * (1 - (result.atsScore || 70) / 100)}
+                          strokeLinecap="round" />
+                  <defs>
+                    <linearGradient id="ats-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#7c3aed" />
+                      <stop offset="100%" stopColor="#06b6d4" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div className="absolute flex flex-col items-center">
+                  <span className="text-3xl font-black text-white">{result.atsScore || 70}</span>
+                  <span className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">ATS Score</span>
+                </div>
+              </div>
+
+              {/* content */}
+              <div className="flex-1 space-y-4">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-200">AI ATS Optimization Feedback</h3>
+                  <p className="text-xs text-slate-400 mt-1">Our scanner checks your resume against industry recruitment algorithms to rate its structural strength and keyword density.</p>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {/* missing keywords */}
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-red-400">Missing Key Skills</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(result.missingKeywords && result.missingKeywords.length > 0) ? result.missingKeywords.map((k: string) => (
+                        <span key={k} className="rounded-lg bg-red-950/20 border border-red-900/30 px-2 py-0.5 text-xs text-red-300">
+                          + {k}
+                        </span>
+                      )) : <span className="text-xs text-slate-500">None! Excellent keyword coverage.</span>}
+                    </div>
+                  </div>
+
+                  {/* weak keywords suggestions */}
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">Common Keywords (Needs Specifying)</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(result.weakKeywords && result.weakKeywords.length > 0) ? result.weakKeywords.map((k: string) => (
+                        <span key={k} className="rounded-lg bg-amber-950/20 border border-amber-900/30 px-2 py-0.5 text-[11px] text-amber-300 leading-tight">
+                          {k}
+                        </span>
+                      )) : <span className="text-xs text-slate-500">None! Strong technical terms used.</span>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="grid gap-5 md:grid-cols-3">
               {[
                 {

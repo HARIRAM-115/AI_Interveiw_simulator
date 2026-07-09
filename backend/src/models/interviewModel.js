@@ -16,8 +16,21 @@ const interviewSchema = new mongoose.Schema(
       enum: ['Junior', 'Mid', 'Senior'],
       default: 'Mid',
     },
+    type: {
+      type: String,
+      enum: ['Technical', 'Behavioral', 'Mixed'],
+      default: 'Mixed',
+    },
+    company: {
+      type: String,
+      default: 'None',
+    },
     skills: {
       type: [String],
+      default: [],
+    },
+    roadmap: {
+      type: Array,
       default: [],
     },
     questions: {
@@ -35,6 +48,34 @@ const interviewSchema = new mongoose.Schema(
         feedback: String,
         strengths: [String],
         weaknesses: [String],
+        detailedExplanation: {
+          type: String,
+          default: '',
+        },
+        modelAnswer: {
+          type: String,
+          default: '',
+        },
+        fillerWords: {
+          type: [String],
+          default: [],
+        },
+        fillerCount: {
+          type: Number,
+          default: 0,
+        },
+        communicationScore: {
+          type: Number,
+          default: 100,
+        },
+        codeComplexity: {
+          type: String,
+          default: '',
+        },
+        codeQualityScore: {
+          type: Number,
+          default: 0,
+        },
       },
     ],
     overallScore: {

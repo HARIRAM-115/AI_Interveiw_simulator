@@ -5,6 +5,7 @@ import {
   finishInterview,
   getInterviews,
   getInterviewDetails,
+  getLeaderboard,
 } from '../controllers/interviewController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -16,6 +17,7 @@ router.post('/start', startInterview);
 router.post('/:id/submit-answer', submitAnswer);
 router.post('/:id/finish', finishInterview);
 router.get('/', getInterviews);
+router.get('/leaderboard', getLeaderboard);
 router.get('/:id', getInterviewDetails);
 
 export default router;

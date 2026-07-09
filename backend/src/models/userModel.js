@@ -25,6 +25,14 @@ const userSchema = new mongoose.Schema(
       enum: ['candidate', 'interviewer', 'admin'],
       default: 'candidate',
     },
+    resetPasswordOtp: {
+      type: String,
+      default: null,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
