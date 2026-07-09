@@ -26,7 +26,10 @@ const RegisterPage = () => {
       if (err.response?.data?.message) {
         msg = err.response.data.message;
       } else if (err.message === 'Network Error') {
-        msg = 'Server is unreachable. Please make sure the backend is running on port 5050.';
+        const isLocal = err.config?.baseURL?.includes('localhost');
+        msg = isLocal 
+          ? 'Server is unreachable. Please make sure the local backend is running on port 5050.'
+          : 'Server is unreachable. Please ensure MONGODB_URI and GROQ_API_KEY environment variables are configured on your Vercel backend.';
       } else if (err.message) {
         msg = err.message;
       }
