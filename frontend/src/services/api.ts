@@ -1,6 +1,6 @@
 import axios, { AxiosProgressEvent } from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5050/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://backend-lovat-five-15.vercel.app/api';
 
 const api = axios.create({
   baseURL: API_BASE,

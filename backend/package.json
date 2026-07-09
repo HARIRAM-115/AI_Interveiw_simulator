@@ -19,6 +19,7 @@
     "pdf-parse": "^1.1.1"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "vercel": "^55.0.0"
   }
 }
