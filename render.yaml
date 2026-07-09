@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: ai-interview-backend
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node src/index.js
+    envVars:
+      - key: PORT
+        value: 5050
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        sync: true
+      - key: GROQ_API_KEY
+        sync: true
+      - key: MONGODB_URI
+        sync: true
