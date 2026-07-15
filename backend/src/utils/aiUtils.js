@@ -138,33 +138,83 @@ Generate different and creative questions covering a variety of scenarios. Retur
   }
 };
 
+const isGibberishOrTrivial = (text) => {
+  const cleaned = (text || '').trim();
+  if (cleaned.length < 5) return true;
+
+  // Check if it's just a repetition of the same word or character
+  const words = cleaned.split(/\s+/);
+  const uniqueWords = new Set(words.map(w => w.toLowerCase()));
+  if (uniqueWords.size === 1 && words.length > 1) return true;
+
+  // Check if the text is random keystrokes (no vowels in words)
+  const vowelCount = (cleaned.match(/[aeiouyAEIOUY]/g) || []).length;
+  if (vowelCount === 0 && !/[\{\}\[\]\(\);=]/.test(cleaned)) return true;
+
+  // Check if longer words have no vowels at all (e.g. "sdfghjk")
+  const longWords = words.filter(w => w.length > 3);
+  if (longWords.length > 0) {
+    const longVowels = longWords.filter(w => /[aeiouyAEIOUY]/i.test(w) || /[\{\}\[\]\(\);=]/.test(w));
+    if (longVowels.length === 0) return true;
+  }
+  
+  return false;
+};
+
 export const evaluateAnswer = async ({ question = '', answer = '', role = 'software engineer' }) => {
+  const cleanedAnswer = (answer || '').trim();
+
+  // Pre-validate for gibberish/empty/trivial answers
+  if (!cleanedAnswer || cleanedAnswer.length < 4 || isGibberishOrTrivial(cleanedAnswer)) {
+    return {
+      score: 1,
+      feedback: "The response is too brief, trivial, or contains invalid gibberish characters. Please provide a meaningful answer to receive a proper assessment.",
+      strengths: [],
+      weaknesses: ["Answer is empty, too short, or contains gibberish"],
+      detailedExplanation: "A valid technical or behavioral answer is required to perform an evaluation.",
+      modelAnswer: "Please provide a complete and structured answer to receive a proper model answer.",
+      fillerWords: [],
+      fillerCount: 0,
+      communicationScore: 0,
+      codeComplexity: "N/A",
+      codeQualityScore: 0
+    };
+  }
+
   const client = createClient();
 
   if (!client) {
-    return buildFallbackEvaluation({ question, answer, role });
+    return buildFallbackEvaluation({ question, answer: cleanedAnswer, role });
   }
 
   try {
-    const isCode = /(const|let|function|def |class |import |include|using |public |void |#include|{)/i.test(answer);
+    const isCode = /(const|let|function|def |class |import |include|using |public |void |#include|{)/i.test(cleanedAnswer);
     
-    const prompt = `You are a strict interview evaluator. Evaluate the following answer to the interview question for a ${role} role.
+    const prompt = `You are a Senior Technical Interview Evaluator. Evaluate the candidate's answer to the following interview question for a ${role} role.
+Be extremely strict, objective, and critical in your assessment. Do not give high scores for brief, vague, incorrect, or low-effort answers.
+
+CRITICAL INSTRUCTIONS:
+1. GIBBERISH OR TRIVIAL ANSWERS: If the answer is gibberish, empty, or completely unrelated to the question, assign a score of 0 or 1.
+2. TECHNICAL ACCURACY: If the question asks for code or a technical solution, analyze the logic line-by-line. If there are logical bugs, syntax errors, or if the code does not actually solve the question, deduct points heavily and list the bugs under "weaknesses".
+3. NO CODE PROVIDED: If the question requires code/implementation but the candidate only gives a brief description without code, score it below 4.
+4. EDGE CASES: Check if the answer/code handles edge cases (e.g. empty inputs, null pointers, division by zero). Deduct points if edge cases are ignored.
+
 Provide your output as a raw JSON object containing exactly the following fields (do not include markdown wrapping or other text):
-- "score": (number from 0 to 10)
-- "feedback": (detailed feedback string)
-- "strengths": (array of strings, e.g. ["Strong technical depth", ...])
-- "weaknesses": (array of strings, e.g. ["Could give more specific metrics", ...])
-- "detailedExplanation": (detailed paragraph string explaining the underlying concepts of the question, what the candidate got right, and what was missing in their response)
-- "modelAnswer": (a perfect 10/10 mock answer for this question that is professional, thorough, and tailored to a ${role})
-${isCode ? `- "codeComplexity": (a string representing time and space complexity, e.g. "O(N) Time, O(N) Space")\n- "codeQualityScore": (a number from 0 to 10 evaluating the code's design, style, and correctness)` : ''}
+- "score": (number from 0 to 10. 10 means perfect production-grade solution, 0 means blank/unrelated/gibberish)
+- "feedback": (constructive feedback explaining what is wrong or how to improve)
+- "strengths": (array of strings, or empty array if none)
+- "weaknesses": (array of strings pointing out exact errors, bugs, or missing points)
+- "detailedExplanation": (detailed paragraph explaining the correct concept, the logic, and why the candidate's answer is correct/incorrect)
+- "modelAnswer": (a perfect 10/10 mock answer/code for this question that is professional, thorough, and tailored to a ${role})
+${isCode ? `- "codeComplexity": (a string representing time and space complexity, e.g. "O(N) Time, O(N) Space")\n- "codeQualityScore": (a number from 0 to 10 evaluating correctness, syntax, edge cases, and design)` : ''}
 
 Question: ${question}
-Answer: ${answer}`;
+Answer: ${cleanedAnswer}`;
 
     const response = await client.chat.completions.create({
       model: 'llama3-70b-8192',
       messages: [{ role: 'user', content: prompt }],
-      temperature: 0.3,
+      temperature: 0.2,
       max_tokens: 800,
     });
 
