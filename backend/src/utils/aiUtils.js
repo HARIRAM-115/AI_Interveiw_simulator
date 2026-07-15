@@ -147,14 +147,22 @@ const isGibberishOrTrivial = (text) => {
   const uniqueWords = new Set(words.map(w => w.toLowerCase()));
   if (uniqueWords.size === 1 && words.length > 1) return true;
 
-  // Check if the text is random keystrokes (no vowels in words)
-  const vowelCount = (cleaned.match(/[aeiouyAEIOUY]/g) || []).length;
-  if (vowelCount === 0 && !/[\{\}\[\]\(\);=]/.test(cleaned)) return true;
+  // Calculate vowel-to-letter ratio for gibberish detection
+  const letters = cleaned.replace(/[^a-zA-Z]/g, '');
+  const isCodePattern = /[\{\}\[\]\(\);=<>!]/.test(cleaned);
+
+  if (letters.length > 0) {
+    const vowelCount = (letters.match(/[aeiouyAEIOUY]/g) || []).length;
+    const vowelRatio = vowelCount / letters.length;
+    
+    // Standard English has ~30%+ vowel ratio. If it's < 18% and not code syntax, it's gibberish.
+    if (vowelRatio < 0.18 && !isCodePattern) return true;
+  }
 
   // Check if longer words have no vowels at all (e.g. "sdfghjk")
   const longWords = words.filter(w => w.length > 3);
   if (longWords.length > 0) {
-    const longVowels = longWords.filter(w => /[aeiouyAEIOUY]/i.test(w) || /[\{\}\[\]\(\);=]/.test(w));
+    const longVowels = longWords.filter(w => /[aeiouyAEIOUY]/i.test(w) || /[\{\}\[\]\(\);=<>!]/.test(w));
     if (longVowels.length === 0) return true;
   }
   
