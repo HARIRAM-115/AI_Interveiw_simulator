@@ -5,6 +5,13 @@ export const startInterview = async (req, res, next) => {
   try {
     const { role, skills, resumeText, difficulty, type, company, count } = req.body;
 
+    // Fetch previous questions to avoid repetition
+    const previousInterviews = await Interview.find({ userId: req.user._id })
+      .select('questions')
+      .limit(10)
+      .lean();
+    const excludeList = previousInterviews.flatMap((i) => i.questions || []);
+
     const limit = count ? Number(count) : 5;
     const questions = await generateInterviewQuestions({
       role,
@@ -14,6 +21,7 @@ export const startInterview = async (req, res, next) => {
       type,
       company: company || 'None',
       count: limit,
+      excludeList,
     });
 
     const interview = await Interview.create({

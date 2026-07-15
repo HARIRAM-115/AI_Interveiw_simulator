@@ -79,7 +79,7 @@ const buildFallbackEvaluation = ({ question = '', answer = '', role = 'software 
   };
 };
 
-export const generateInterviewQuestions = async ({ role = 'software engineer', skills = [], resumeText = '', difficulty = 'Mid', type = 'Mixed', company = 'None', count = 5 }) => {
+export const generateInterviewQuestions = async ({ role = 'software engineer', skills = [], resumeText = '', difficulty = 'Mid', type = 'Mixed', company = 'None', count = 5, excludeList = [] }) => {
   const client = createClient();
 
   if (!client) {
@@ -101,13 +101,23 @@ export const generateInterviewQuestions = async ({ role = 'software engineer', s
       companyInstructions = `\nIMPORTANT: Tailor these questions to match the typical hiring patterns, core values, and interview style of "${company}". (For example, Google questions should prioritize complex algorithms/structures; Amazon should heavily target core technical depth along with behavioral Leadership Principles; Zoho focuses on problem-solving puzzles and custom programming logic; TCS/Infosys focus on core OOPs, DBMS/SQL, and fundamental coding standards).`;
     }
 
-    const prompt = `You are an interviewer for an AI interview simulator. Generate exactly ${count} concise and professional interview questions for a ${difficulty}-level ${role} role. The interview type is ${type}.${companyInstructions}
+    let excludeInstructions = '';
+    if (Array.isArray(excludeList) && excludeList.length > 0) {
+      const validExcludes = excludeList.map(q => q.trim()).filter(Boolean);
+      if (validExcludes.length > 0) {
+        excludeInstructions = `\nCRITICAL: Do NOT repeat or generate any of the following questions (or questions that are very similar to them):
+- ${validExcludes.slice(-15).join('\n- ')}`;
+      }
+    }
+
+    const prompt = `You are an interviewer for an AI interview simulator. Generate exactly ${count} concise, professional, and unique interview questions for a ${difficulty}-level ${role} role. The interview type is ${type}.${companyInstructions}
 ${focusInstructions}
 Use the candidate's resume skills and background when relevant.
 Resume skills: ${skills.join(', ') || 'general software engineering'}.
 Resume text: ${resumeText.slice(0, 1800)}.
+${excludeInstructions}
 
-Return the questions as a simple numbered list, one question per line. Do not include any intro, outro, headers, or explanations.`;
+Generate different and creative questions covering a variety of scenarios. Return the questions as a simple numbered list, one question per line. Do not include any intro, outro, headers, or explanations.`;
 
     const response = await client.chat.completions.create({
       model: 'llama3-70b-8192',

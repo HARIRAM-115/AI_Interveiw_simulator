@@ -1,9 +1,21 @@
 import { generateInterviewQuestions, evaluateAnswer, generateCareerMatch, generateSkillTutorial } from '../utils/aiUtils.js';
+import Interview from '../models/interviewModel.js';
 
 export const generateQuestions = async (req, res, next) => {
   try {
     const { role, skills, resumeText } = req.body;
-    const questions = await generateInterviewQuestions({ role, skills, resumeText });
+
+    // Fetch previous questions to avoid repetition
+    let excludeList = [];
+    if (req.user && req.user._id) {
+      const previousInterviews = await Interview.find({ userId: req.user._id })
+        .select('questions')
+        .limit(10)
+        .lean();
+      excludeList = previousInterviews.flatMap((i) => i.questions || []);
+    }
+
+    const questions = await generateInterviewQuestions({ role, skills, resumeText, excludeList });
     res.json({ success: true, data: { questions } });
   } catch (error) {
     next(error);
